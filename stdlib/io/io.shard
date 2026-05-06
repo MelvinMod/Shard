@@ -1,0 +1,102 @@
+// Shard Standard Library - I/O Module
+// Author: MelvinSGjr (MelvinMod)
+
+use core;
+
+// File handle
+struct File {
+    handle: *Void,
+    name: String,
+    mode: Int,
+}
+
+// Standard streams
+const STDIN: Int = 0;
+const STDOUT: Int = 1;
+const STDERR: Int = 2;
+
+// Print to stdout
+fn print(args...) {
+    for arg in args {
+        write(STDOUT, arg);
+    }
+}
+
+// Print with newline
+fn println(args...) {
+    print(args...);
+    write(STDOUT, "\n");
+}
+
+// Read from stdin
+fn input(prompt: String) -> String {
+    if prompt {
+        print(prompt);
+    }
+    return read_line(STDIN);
+}
+
+// Read a single character
+fn get_char() -> Char {
+    read_char(STDIN)
+}
+
+// Write to a file
+fn write(handle: Int, data: String) {
+    fwrite(data, len(data), 1, handle);
+}
+
+// Read from a file
+fn read(handle: Int, buffer: String, size: Int) -> Int {
+    fread(buffer, 1, size, handle)
+}
+
+// Open a file
+fn open_file(path: String, mode: String) -> File {
+    let handle: *Void = fopen(path, mode);
+    if handle == nullptr() {
+        panic("Failed to open file: " + path);
+    }
+    return File {
+        handle: handle,
+        name: path,
+        mode: 0,
+    };
+}
+
+// Close a file
+fn close_file(file: File) {
+    fclose(file.handle);
+}
+
+// Read all lines from a file
+fn read_lines(file: File) -> [String] {
+    let lines: [String] = [];
+    let line: String = malloc(1024) as String;
+    
+    loop {
+        if fgets(line, 1024, file.handle) == nullptr() {
+            break;
+        }
+        lines.push(line);
+        line = malloc(1024) as String;
+    }
+    
+    return lines;
+}
+
+// Write a line to a file
+fn write_line(file: File, line: String) {
+    fputs(line, file.handle);
+    fputc('\n', file.handle);
+}
+
+// File utilities
+fn file_exists(path: String) -> Bool {
+    access(path, 0) == 0
+}
+
+fn file_size(path: String) -> Int {
+    let metadata: Stat = stat(path);
+    return metadata.size;
+}

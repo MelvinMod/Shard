@@ -1,0 +1,143 @@
+// Shard Standard Library - Core Module
+// Author: MelvinSGjr (MelvinMod)
+
+// Fundamental types
+type Int = i64;
+type Int8 = i8;
+type Int16 = i16;
+type Int32 = i32;
+type Int64 = i64;
+type UInt = u64;
+type UInt8 = u8;
+type UInt16 = u16;
+type UInt32 = u32;
+type UInt64 = u64;
+type Float = f64;
+type Float32 = f32;
+type Float64 = f64;
+type Bool = bool;
+type Char = char;
+type String = String;
+type Void = ();
+
+// Result type for error handling
+enum Result {
+    Success(Int),
+    Error(String),
+}
+
+// Option type
+enum Option {
+    Some(Int),
+    None,
+}
+
+// Memory allocation
+fn alloc<T>() -> *T {
+    unsafe {
+        malloc(size_of<T>()) as *T
+    }
+}
+
+fn free(ptr: *Void) {
+    unsafe {
+        free(ptr)
+    }
+}
+
+fn alloc_array<T>(size: Int) -> *T {
+    unsafe {
+        malloc(size * size_of<T>()) as *T
+    }
+}
+
+fn free_array(ptr: *Void) {
+    unsafe {
+        free(ptr)
+    }
+}
+
+// Size of types
+fn size_of<T>() -> Int {
+    sizeof::<T>()
+}
+
+// Panic and error handling
+fn panic(message: String) -> Void {
+    print("PANIC: ");
+    print(message);
+    exit(1);
+}
+
+fn assert(condition: Bool) {
+    if !condition {
+        panic("Assertion failed");
+    }
+}
+
+// Exit program
+fn exit(code: Int) -> Void {
+    exit(code);
+}
+
+// Compiler intrinsics
+#[inline]
+fn abs<T>(x: T) -> T {
+    if x < 0 {
+        return -x;
+    }
+    return x;
+}
+
+#[inline]
+fn min<T>(a: T, b: T) -> T {
+    if a < b {
+        return a;
+    }
+    return b;
+}
+
+#[inline]
+fn max<T>(a: T, b: T) -> T {
+    if a > b {
+        return a;
+    }
+    return b;
+}
+
+// String utilities
+fn len(s: String) -> Int {
+    strlen(s)
+}
+
+fn concat(s1: String, s2: String) -> String {
+    let len1: Int = strlen(s1);
+    let len2: Int = strlen(s2);
+    let result: String = malloc(len1 + len2 + 1) as String;
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
+
+// Array utilities
+fn array_len<T>(arr: *[T]) -> Int {
+    // Implementation depends on array type
+    0
+}
+
+// Type conversions
+fn int_to_string(x: Int) -> String {
+    itoa(x)
+}
+
+fn float_to_string(x: Float) -> String {
+    ftos(x)
+}
+
+fn string_to_int(s: String) -> Int {
+    atoi(s)
+}
+
+fn string_to_float(s: String) -> Float {
+    atof(s)
+}

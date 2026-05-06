@@ -1,0 +1,209 @@
+// Shard Standard Library - Math Module
+// Author: MelvinSGjr (MelvinMod)
+
+use core;
+
+// Constants
+const PI: Float = 3.14159265358979323846;
+const E: Float = 2.71828182845904523536;
+const PHI: Float = 1.61803398874989484820;
+const MAX_INT: Int = 9223372036854775807;
+const MIN_INT: Int = -9223372036854775808;
+
+// Trigonometric functions
+fn sin(x: Float) -> Float {
+    sin(x)
+}
+
+fn cos(x: Float) -> Float {
+    cos(x)
+}
+
+fn tan(x: Float) -> Float {
+    tan(x)
+}
+
+fn asin(x: Float) -> Float {
+    asin(x)
+}
+
+fn acos(x: Float) -> Float {
+    acos(x)
+}
+
+fn atan(x: Float) -> Float {
+    atan(x)
+}
+
+fn atan2(y: Float, x: Float) -> Float {
+    atan2(y, x)
+}
+
+// Exponential and logarithmic
+fn exp(x: Float) -> Float {
+    exp(x)
+}
+
+fn log(x: Float) -> Float {
+    log(x)
+}
+
+fn log10(x: Float) -> Float {
+    log10(x)
+}
+
+fn log2(x: Float) -> Float {
+    log2(x)
+}
+
+// Power and root
+fn pow(base: Float, exp: Float) -> Float {
+    pow(base, exp)
+}
+
+fn sqrt(x: Float) -> Float {
+    sqrt(x)
+}
+
+fn cbrt(x: Float) -> Float {
+    cbrt(x)
+}
+
+fn hypot(x: Float, y: Float) -> Float {
+    sqrt(x * x + y * y)
+}
+
+// Rounding
+fn floor(x: Float) -> Float {
+    floor(x)
+}
+
+fn ceil(x: Float) -> Float {
+    ceil(x)
+}
+
+fn round(x: Float) -> Float {
+    round(x)
+}
+
+fn trunc(x: Float) -> Float {
+    trunc(x)
+}
+
+// Absolute value
+fn abs(x: Int) -> Int {
+    if x < 0 {
+        return -x;
+    }
+    return x;
+}
+
+fn abs_float(x: Float) -> Float {
+    if x < 0.0 {
+        return -x;
+    }
+    return x;
+}
+
+// Minimum and maximum
+fn min<T>(a: T, b: T) -> T {
+    if a < b {
+        return a;
+    }
+    return b;
+}
+
+fn max<T>(a: T, b: T) -> T {
+    if a > b {
+        return a;
+    }
+    return b;
+}
+
+// Clamping
+fn clamp<T>(value: T, min: T, max: T) -> T {
+    if value < min {
+        return min;
+    }
+    if value > max {
+        return max;
+    }
+    return value;
+}
+
+// Sign
+fn sign(x: Int) -> Int {
+    if x < 0 {
+        return -1;
+    }
+    if x > 0 {
+        return 1;
+    }
+    return 0;
+}
+
+fn sign_float(x: Float) -> Int {
+    if x < 0.0 {
+        return -1;
+    }
+    if x > 0.0 {
+        return 1;
+    }
+    return 0;
+}
+
+// Modulo
+fn mod(x: Int, y: Int) -> Int {
+    x % y
+}
+
+fn fmod(x: Float, y: Float) -> Float {
+    fmod(x, y)
+}
+
+// Random numbers
+fn random() -> Float {
+    rand() as Float / (RAND_MAX as Float)
+}
+
+fn random_int(max: Int) -> Int {
+    rand() % max
+}
+
+fn random_range(min: Int, max: Int) -> Int {
+    min + rand() % (max - min + 1)
+}
+
+// Seed random
+fn srand(seed: Int) {
+    srand(seed);
+}
+
+// Bit operations
+fn bit_count(x: Int) -> Int {
+    let count: Int = 0;
+    mut n: Int = x;
+    loop {
+        if n == 0 {
+            break;
+        }
+        count = count + (n & 1);
+        n = n >> 1;
+    }
+    return count;
+}
+
+fn reverse_bits(x: Int) -> Int {
+    let result: Int = 0;
+    mut n: Int = x;
+    mut i: Int = 0;
+    loop {
+        if i >= 64 {
+            break;
+        }
+        result = result | ((n & 1) << (63 - i));
+        n = n >> 1;
+        i = i + 1;
+    }
+    return result;
+}

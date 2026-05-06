@@ -1,0 +1,163 @@
+// Shard Standard Library - OS Module
+// Author: MelvinSGjr (MelvinMod)
+
+use core;
+use io;
+
+// Platform detection
+const PLATFORM_LINUX: Bool = true;
+const PLATFORM_WINDOWS: Bool = false;
+const PLATFORM_FREEBSD: Bool = false;
+const PLATFORM_MACOS: Bool = false;
+
+// Environment
+fn get_env(var: String) -> String {
+    getenv(var)
+}
+
+fn set_env(var: String, value: String) {
+    setenv(var, value, 1);
+}
+
+fn unset_env(var: String) {
+    unsetenv(var);
+}
+
+// Command execution
+fn system(command: String) -> Int {
+    system(command)
+}
+
+fn exec(args: [String]) -> Int {
+    let argc: Int = len(args);
+    let argv: *[String] = args;
+    execvp(argv[0], argv);
+    return -1;
+}
+
+// Process information
+fn get_pid() -> Int {
+    getpid()
+}
+
+fn get_ppid() -> Int {
+    getppid()
+}
+
+// Directory operations
+fn cwd() -> String {
+    getcwd(nullptr(), 0)
+}
+
+fn chdir(path: String) {
+    chdir(path);
+}
+
+fn mkdir(path: String) {
+    mkdir(path, 0o755);
+}
+
+fn rmdir(path: String) {
+    rmdir(path);
+}
+
+fn list_dir(path: String) -> [String] {
+    let entries: [String] = [];
+    let dir: *Void = opendir(path);
+    if dir == nullptr() {
+        return entries;
+    }
+    
+    loop {
+        let entry: *Void = readdir(dir);
+        if entry == nullptr() {
+            break;
+        }
+        let name: String = entry->d_name;
+        if name != "." && name != ".." {
+            entries.push(name);
+        }
+    }
+    
+    closedir(dir);
+    return entries;
+}
+
+// File operations
+fn rename(old: String, new: String) {
+    rename(old, new);
+}
+
+fn copy_file(src: String, dst: String) {
+    let input: File = open_file(src, "r");
+    let output: File = open_file(dst, "w");
+    
+    let buffer: String = malloc(4096) as String;
+    loop {
+        let bytes: Int = read(input, buffer, 4096);
+        if bytes == 0 {
+            break;
+        }
+        write(output, buffer, bytes);
+    }
+    
+    free(buffer);
+    close_file(input);
+    close_file(output);
+}
+
+fn delete_file(path: String) {
+    unlink(path);
+}
+
+// Time
+fn now() -> Int64 {
+    time(nullptr())
+}
+
+fn sleep(seconds: Int) {
+    sleep(seconds);
+}
+
+fn msleep(milliseconds: Int) {
+    let usecs: Int = milliseconds * 1000;
+    usleep(usecs);
+}
+
+// System info
+fn platform() -> String {
+    #if PLATFORM_LINUX
+    return "linux";
+    #elif PLATFORM_WINDOWS
+    return "windows";
+    #elif PLATFORM_FREEBSD
+    return "freebsd";
+    #elif PLATFORM_MACOS
+    return "macos";
+    #else
+    return "unknown";
+    #endif
+}
+
+fn arch() -> String {
+    #if target_arch("x86_64")
+    return "x86_64";
+    #elif target_arch("x86")
+    return "x86";
+    #elif target_arch("arm")
+    return "arm";
+    #elif target_arch("aarch64")
+    return "aarch64";
+    #else
+    return "unknown";
+    #endif
+}
+
+// Exit
+fn exit(code: Int) -> Void {
+    exit(code);
+}
+
+fn abort() -> Void {
+    abort();
+}
