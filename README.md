@@ -90,7 +90,7 @@ Hello, World!
 6. **BEGINNER_05.md** - Functions
 7. **BEGINNER_06.md** - Objects
 
-### Projects (when it will be accessible)
+### Projects
 
 1. **PROJECT_01.md** - Make a game
 2. **PROJECT_02.md** - Make an AI
