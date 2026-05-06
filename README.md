@@ -1,6 +1,9 @@
 # Shard Programming Language
 
-**Easy to learn. Powerful to use.**
+**Low-level programming languageю Easy to learn. Powerful to use.**
+
+# Warning!!!
+Shard is an intriguing toy/concept that was created just for me because Zig and D are good, but I have issues like wanting to switch to a different language, trying Ruby, which is perfect but not perfect as Crystal and I need low-level programming language, and using Rust until the library system got weird and drunk to me and Rust is difficult to understand if we talk about logic. I also detest many linguistic issues like Crystal has (I fell in love with code style, but ended up hating it because "useless" is probably ecosystem is tiny, many libraries are abandoned or missing, compile times can be excruciously slow for anything larger than a script, and it never reached the critical mass).
 
 ## Author
 **MelvinSGjr** (GitHub: [MelvinMod](https://github.com/MelvinMod))
