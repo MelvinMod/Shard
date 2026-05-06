@@ -77,7 +77,7 @@ Hello, World!
 
 ## Learning Path
 
-### Start Here
+### Start Here (when it will be accessible)
 
 1. **START_HERE.md** - Welcome guide
 2. **BEGINNER_01.md** - Your first words
@@ -87,7 +87,7 @@ Hello, World!
 6. **BEGINNER_05.md** - Functions
 7. **BEGINNER_06.md** - Objects
 
-### Projects
+### Projects (when it will be accessible)
 
 1. **PROJECT_01.md** - Make a game
 2. **PROJECT_02.md** - Make an AI
