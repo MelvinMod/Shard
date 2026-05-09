@@ -91,7 +91,7 @@ let loader = LibraryLoader.new("/usr/lib/libm.so")
 loader.load()
 ```
 
-## DreamBerd Improvements
+## Improvements
 
 - Reduced cognitive load
 - Better code readability
