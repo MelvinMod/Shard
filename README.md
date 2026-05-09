@@ -74,7 +74,7 @@ shard run hello.shard
 shard compile program.shard -o program --backend native
 ```
 
-### Rust FFI Backend
+### Rust FFI Backend (Rust Support)
 - Compiles to Rust
 - Use Rust libraries
 - Type safety
@@ -155,7 +155,7 @@ loader.load()
 - **FEATURES.md** - Feature overview
 
 ### Examples
-- **examples/** - Working programs
+- **[examples](https://github.com/MelvinMod/Shard/tree/main/examples)** - Working programs
 
 ## Examples Directory
 
