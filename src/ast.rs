@@ -1,12 +1,11 @@
 use std::fmt;
-use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct CompilationUnit {
     pub nodes: Vec<Node>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Node {
     Function(FunctionDef),
     Variable(VariableDef),
@@ -16,7 +15,7 @@ pub enum Node {
     Import(ImportDef),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct FunctionDef {
     pub name: String,
     pub params: Vec<Parameter>,
@@ -25,13 +24,13 @@ pub struct FunctionDef {
     pub is_pub: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Parameter {
     pub name: String,
     pub type_: Type,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct VariableDef {
     pub name: String,
     pub type_: Option<Type>,
@@ -39,43 +38,43 @@ pub struct VariableDef {
     pub is_mut: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct StructDef {
     pub name: String,
     pub fields: Vec<Field>,
     pub is_pub: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Field {
     pub name: String,
     pub type_: Type,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct EnumDef {
     pub name: String,
     pub variants: Vec<EnumVariant>,
     pub is_pub: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct EnumVariant {
     pub name: String,
     pub data: Option<Type>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ImportDef {
     pub path: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Block {
     pub statements: Vec<Statement>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Expression(Expression),
     Variable(VariableDef),
@@ -88,38 +87,38 @@ pub enum Statement {
     Continue,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct IfExpr {
-    pub condition: Expression,
+    pub condition: Box<Expression>,
     pub then_block: Block,
     pub else_block: Option<Block>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct LoopExpr {
     pub body: Block,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ForExpr {
     pub variable: String,
     pub iterable: Expression,
     pub body: Block,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct MatchExpr {
-    pub value: Expression,
+    pub value: Box<Expression>,
     pub arms: Vec<MatchArm>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct MatchArm {
     pub pattern: Pattern,
     pub body: Block,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Pattern {
     Literal(Literal),
     Identifier(String),
@@ -127,7 +126,7 @@ pub enum Pattern {
     EnumVariant(String, Option<String>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Literal(Literal),
     Identifier(String),
@@ -157,7 +156,7 @@ pub enum Expression {
         params: Vec<Parameter>,
         body: Box<Block>,
     },
-    If(IfExpr),
+    If(Box<IfExpr>),
     Match(MatchExpr),
     Assign {
         target: Box<Expression>,
@@ -165,7 +164,7 @@ pub enum Expression {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Literal {
     Int(i64),
     Float(f64),
@@ -175,7 +174,7 @@ pub enum Literal {
     Null,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum BinOp {
     Add,
     Sub,
@@ -197,7 +196,7 @@ pub enum BinOp {
     Shr,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum UnaryOp {
     Neg,
     Not,
@@ -205,7 +204,7 @@ pub enum UnaryOp {
     Deref,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Int,
     Int8,

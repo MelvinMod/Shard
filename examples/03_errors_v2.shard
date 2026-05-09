@@ -1,0 +1,57 @@
+fn main() -> Void
+    say "=== Error Handling ==="
+    say ""
+    
+    match read_file("test.txt") {
+        Ok(content) => {
+            say "File content: #{content}"
+        }
+        Err(e) => {
+            say "Error reading file: #{e}"
+        }
+    }
+    
+    say ""
+    say "=== Try Operator ==="
+    say ""
+    
+    let result: i32 = divide(10, 2) try
+    say "10 / 2 = #{result}"
+    
+    let result2: i32 = divide(10, 0) try
+    say "10 / 0 = #{result2}"
+~
+
+enum FileError
+    NotFound
+    PermissionDenied
+    IoError
+~
+
+fn read_file(path: []const u8) !String
+    if not file_exists(path) {
+        return Err(FileError::NotFound)
+    }
+    
+    let content: String = load_file(path)
+    return Ok(content)
+~
+
+enum DivError
+    DivisionByZero
+~
+
+fn divide(a: i32, b: i32) !i32
+    if b == 0 {
+        return Err(DivError::DivisionByZero)
+    }
+    return Ok(a / b)
+~
+
+fn file_exists(path: []const u8) -> Bool
+    true
+~
+
+fn load_file(path: []const u8) -> String
+    "Sample content"
+~

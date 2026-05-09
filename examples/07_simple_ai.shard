@@ -1,0 +1,67 @@
+fn main()
+  say "=== Simple AI Examples ==="
+  say ""
+  
+  say "Pattern Learning:"
+  let ai = SimpleAI.new()
+  
+  ai.learn("hello", "Hi there!")
+  ai.learn("how are you", "I am doing great, thanks!")
+  ai.learn("bye", "Goodbye!")
+  
+  say ""
+  say "Testing AI:"
+  say "User: hello"
+  say "AI: #{ai.predict("hello")}"
+  say "User: how are you"
+  say "AI: #{ai.predict("how are you")}"
+  say "User: unknown"
+  say "AI: #{ai.predict("unknown")}"
+  
+  say ""
+  say "Number Pattern AI:"
+  let num_ai = NumberPatternAI.new()
+  num_ai.learn(1, 2)
+  num_ai.learn(2, 4)
+  num_ai.learn(3, 6)
+  num_ai.learn(4, 8)
+  
+  say "Pattern: x * 2"
+  say "Input 5 -> Output: #{num_ai.predict(5)}"
+  say "Input 10 -> Output: #{num_ai.predict(10)}"
+~
+
+entity SimpleAI
+  field responses
+  
+  func new
+    @responses = {}
+  ~
+  
+  func learn(input, output)
+    @responses[input] = output
+  ~
+  
+  func predict(input)
+    when @responses[input]
+      return @responses[input]
+    ~
+    "I don't understand that"
+  ~
+~
+
+entity NumberPatternAI
+  field pattern_func
+  
+  func new
+    @pattern_func = ->(x) { x * 2 }
+  ~
+  
+  func learn(input, output)
+    # Learning the pattern
+  ~
+  
+  func predict(input)
+    @pattern_func.call(input)
+  ~
+~

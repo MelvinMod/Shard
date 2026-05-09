@@ -1,0 +1,72 @@
+fn main()
+  say "=== Function Examples ==="
+  say ""
+  
+  say "Greeting:"
+  greet("Alice")
+  greet("Bob")
+  
+  say ""
+  say "Math Functions:"
+  say "5 + 3 = #{add(5, 3)}"
+  say "10 * 4 = #{multiply(10, 4)}"
+  say "2^10 = #{power(2, 10)}"
+  
+  say ""
+  say "Factorial:"
+  say "5! = #{factorial(5)}"
+  say "10! = #{factorial(10)}"
+  
+  say ""
+  say "Prime Check:"
+  when is_prime(17)
+    say "17 is prime"
+  else
+    say "17 is not prime"
+  ~
+~
+
+func greet(name)
+  say "Hello, #{name}!"
+~
+
+func add(a, b)
+  a + b
+~
+
+func multiply(a, b)
+  a * b
+~
+
+func power(base, exp)
+  base ** exp
+~
+
+func factorial(n)
+  when n <= 1
+    return 1
+  ~
+  n * factorial(n - 1)
+~
+
+func is_prime(n)
+  when n <= 1
+    return false
+  ~
+  when n <= 3
+    return true
+  ~
+  when n % 2 == 0
+    return false
+  ~
+  
+  let i = 3
+  while i * i <= n
+    when n % i == 0
+      return false
+    ~
+    i = i + 2
+  ~
+  
+  true
+~

@@ -1,24 +1,47 @@
 # Shard Programming Language
 
-**Low-level programming language. Easy to learn. Powerful to use.**
-
-# Warning!!!
-Shard is an intriguing toy/concept that was created just for me because Zig and D are good, but I have issues like wanting to switch to a different language, trying Ruby, which is perfect but not perfect as Crystal and I need low-level programming language, and using Rust until the library system got weird and drunk to me and Rust is difficult to understand if we talk about logic. I also detest many linguistic issues like Crystal has (I fell in love with code style, but ended up hating it because "useless" is probably ecosystem is tiny, many libraries are abandoned or missing, compile times can be excruciously slow for anything larger than a script, and it never reached the critical mass). Use Shard programming language sparingly if you want to code or use it for daily tasks because, I suppose, it's shitcoded (please just make me a fork or a better one!) and made extremely simple.
+**Easy as Ruby. Simple as Lua. Beautiful as Crystal. Powerful as Zig. Smart as Python.**
 
 ## Author
 **MelvinSGjr** (GitHub: [MelvinMod](https://github.com/MelvinMod))
 
-## What is Shard?
+# Warning
 
-Shard is a programming language that is:
-- **Easy to learn** - Start in one day
-- **Beautiful** - Clean, readable code
-- **Fast** - Runs quickly
-- **Powerful** - Build anything
+Shard is a **toy / concept language** that I built for **myself**. It exists
+because I kept running into problems with other languages that I otherwise
+really like:
+
+* **Zig & D** – Both are solid low‑level languages, but I constantly felt
+  the urge to jump ship. Zig’s lack of encapsulation and D’s garbage‑collection
+  baggage just never felt right for the kind of code I wanted to write.
+
+* **Ruby** – Ruby’s syntax is a joy, but it’s not a systems language. When
+  I need to be close to the metal, Ruby isn’t an option.
+
+* **Crystal** – Crystal was almost perfect. It looks like Ruby, compiles to
+  native code, and gives you low‑level control. But the reality hit hard:
+  the **ecosystem is tiny**, many libraries are **abandoned or missing**, and
+  **compile times** can be excruciatingly slow for anything bigger than a
+  script. It never reached the critical mass that would have made it
+  practical for my daily work.
+
+* **Rust** – I tried Rust, but the **library system felt weird and chaotic**
+  (like it got “drunk” somewhere along the way), and the language itself
+  is **hard to grasp when you’re thinking about logic** rather than just
+  fighting the borrow checker.
+
+So I ended up creating Shard: a language that is **extremely simple** and
+gives me exactly the low‑level feel I want – without the ecosystem nightmares
+or the mental overhead.
+
+**Use Shard sparingly.** It’s honestly shitcoded (please fork it and make
+something better!), and I wouldn’t recommend it for serious daily tasks.
+This is my personal playground, and you’re welcome to play in it too – just
+don’t expect a polished product.
 
 ## Quick Start
 
-### Install Shard
+### Install
 
 ```bash
 git clone https://github.com/MelvinMod/Shard.git
@@ -27,169 +50,136 @@ cargo build --release
 export PATH="$PWD/target/release:$PATH"
 ```
 
-### Your First Program
-
-Create `hello.shard`:
+### Hello World
 
 ```shard
-say "Hello, World!"
+fn main
+  say "Hello, World!"
+~
 ```
 
-Run it:
-
+Run:
 ```bash
 shard run hello.shard
 ```
 
-Output:
-```
-Hello, World!
-```
+## Two Backends
 
-## Why Shard?
-
-### For Beginners
-- Easy syntax
-- Clear error messages
-- Good documentation
-- Learn in one week
-
-### For Experts
-- Fast execution
-- Low-level control
-- Manual memory when needed
-- Build anything
-
-### For AI Enthusiasts
-- Build neural networks
-- Train models
-- Ready-to-use libraries
-
-### For Game Developers
-- Fast execution
-- Graphics support
-- Game engines
-
-## What Can You Build?
-
-- **AI Models** - Neural networks, machine learning
-- **Games** - 2D and 3D games
-- **Applications** - Desktop apps, tools
-- **Websites** - Web servers, APIs
-- **Scripts** - Automation, data processing
-
-## Learning Path
-
-### Start Here (when it will be accessible)
-
-1. **START_HERE.md** - Welcome guide
-2. **BEGINNER_01.md** - Your first words
-3. **BEGINNER_02.md** - Words and text
-4. **BEGINNER_03.md** - Making decisions
-5. **BEGINNER_04.md** - Repeating things
-6. **BEGINNER_05.md** - Functions
-7. **BEGINNER_06.md** - Objects
-
-### Projects
-
-1. **PROJECT_01.md** - Make a game
-2. **PROJECT_02.md** - Make an AI
-3. **PROJECT_03.md** - Make a website
-
-## Language Features
-
-### Variables
-
-```shard
-let name = "Alice"
-let age = 25
-say "Hello, #{name}"
-```
-
-### Functions
-
-```shard
-func greet(name)
-  say "Hello, #{name}!"
-~
-
-greet("World")
-```
-
-### Conditionals
-
-```shard
-when age >= 18
-  say "Adult"
-else
-  say "Minor"
-~
-```
-
-### Loops
-
-```shard
-each i in 1..5
-  say i
-~
-```
-
-### Objects
-
-```shard
-entity Person
-  field name
-  field age
-  
-  func new(name, age)
-    @name = name
-    @age = age
-  ~
-~
-
-let person = Person.new("Alice", 25)
-```
-
-## Standard Library
-
-- **core** - Core types and functions
-- **io** - File I/O
-- **http** - Web server
-- **json** - JSON parsing
-- **ai** - Machine learning
-- **game** - Game development
-
-## Compiler Commands
+### Native Backend
+- Compiles to C
+- Fast executables
+- No dependencies
 
 ```bash
-# Run a program
-shard run program.shard
+shard compile program.shard -o program --backend native
+```
 
-# Compile
-shard compile program.shard -o program
+### Rust FFI Backend
+- Compiles to Rust
+- Use Rust libraries
+- Type safety
 
-# Check
-shard check program.shard
+```bash
+shard compile program.shard -o program --backend rust
+```
 
-# Build
-shard build --release
+## AI & Machine Learning
+
+### ONNX Support
+```shard
+use ai
+
+let session = OnnxSession.new("model.onnx")
+let output = session.predict(input)
+```
+
+### LLM Support
+```shard
+use ai
+
+let llm = LLM.new("llama-2.gguf")
+let response = llm.generate("What is AI?", 200)
+```
+
+### Computer Vision
+```shard
+use ai
+
+let cv = ComputerVision.new("yolov8.onnx")
+let objects = cv.detect_objects("photo.jpg")
+```
+
+### Neural Networks
+```shard
+use ai
+
+let nn = NeuralNetwork.new()
+  .add_layer(Dense(784, 128))
+  .add_layer(Dense(128, 10))
+
+nn.compile(optimizer="adam", loss="cross_entropy")
+nn.train(dataset, epochs=50)
+```
+
+## Library Loading
+
+```shard
+use lib_loader
+
+let loader = LibraryLoader.new("/usr/lib/libm.so")
+loader.load()
+```
+
+## What You Can Build
+
+- **AI Models** - LLMs, computer vision, neural networks
+- **Games** - 2D/3D games, game engines
+- **Web Apps** - Servers, APIs, full-stack
+- **Systems** - OS, drivers, embedded
+- **Scripts** - Automation, data processing
+
+## Documentation
+
+### Getting Started
+- **GETTING_STARTED.md** - Complete beginner guide
+- **QUICK_REFERENCE.md** - Syntax quick reference
+- **SYNTAX_GUIDE.md** - Complete syntax reference
+
+### Learning
+- **BEGINNER_01.md** to **06.md** - Step-by-step lessons
+- **PROJECT_01.md** to **03.md** - Real projects
+
+### Advanced
+- **AI_GUIDE.md** - AI & ML complete guide
+- **LIBRARY_GUIDE.md** - Library loading guide
+- **FEATURES.md** - Feature overview
+
+### Examples
+- **examples/** - Working programs
+
+## Examples Directory
+
+- `01_hello.shard` - Hello World
+- `02_calculator.shard` - Math operations
+- `03_loops.shard` - Loop examples
+- `04_conditionals.shard` - If/else/match
+- `05_functions.shard` - Functions
+- `06_entities.shard` - Objects
+- `07_simple_ai.shard` - AI examples
+- `08_data_structures.shard` - Collections
+
+## Commands
+
+```bash
+shard run program.shard      # Run
+shard compile file.shard -o program  # Compile
+shard check program.shard    # Check syntax
+shard version                # Show version
 ```
 
 ## File Extension
 
-Use `.shard` for your files:
-
-```
-hello.shard
-game.shard
-website.shard
-```
-
-## Community
-
-- GitHub: [MelvinMod/Shard](https://github.com/MelvinMod/Shard)
-- Examples: `examples/` directory
-- Guides: `*.md` files
+Use `.shard` for source files.
 
 ## License
 

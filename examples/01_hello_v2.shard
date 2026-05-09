@@ -1,0 +1,12 @@
+fn main() -> Void
+    say "Hello, World!"
+    say "Welcome to Shard 0.2.0"
+    say ""
+    say "Features:"
+    say "  - Memory safety without GC"
+    say "  - Optional type annotations"
+    say "  - Error handling with !"
+    say "  - Comptime evaluation"
+    say "  - ASM blocks"
+    say "  - JIT compilation"
+~

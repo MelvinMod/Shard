@@ -1,62 +1,14 @@
 use crate::ast::{
-    CompilationUnit, Node, FunctionDef, VariableDef, Statement, Expression,
-    Literal, BinOp, UnaryOp, Type,
+    CompilationUnit, FunctionDef, VariableDef, Type, Literal, Block, Statement, Expression,
+    BinOp, UnaryOp, IfExpr, LoopExpr, ForExpr, MatchExpr,
 };
-use std::fmt;
-
-#[derive(Debug, Clone)]
-pub enum IRInstruction {
-    ConstInt(i64),
-    ConstFloat(f64),
-    ConstBool(bool),
-    ConstString(String),
-    ConstChar(char),
-    
-    Load(String),
-    Store(String),
-    
-    BinaryOp(BinOp, String, String),
-    UnaryOp(UnaryOp, String),
-    
-    Jump(String),
-    Branch(String, String, String),
-    Return(Option<String>),
-    
-    Call(String, Vec<String>),
-    Arg(String),
-    
-    Alloca(String, Type),
-    LoadVar(String, String),
-    StoreVar(String, String),
-    
-    Phi(Vec<(String, String)>),
-    
-    Label(String),
-    
-    PhiMerge(String),
-    
-    Nop,
-}
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct BasicBlock {
     pub label: String,
     pub instructions: Vec<IRInstruction>,
     pub terminator: Option<IRInstruction>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Function {
-    pub name: String,
-    pub params: Vec<(String, Type)>,
-    pub return_type: Option<Type>,
-    pub blocks: Vec<BasicBlock>,
-}
-
-#[derive(Debug, Clone)]
-pub struct Module {
-    pub functions: Vec<Function>,
-    pub globals: Vec<(String, Type, Option<Literal>)>,
 }
 
 impl BasicBlock {
@@ -67,6 +19,14 @@ impl BasicBlock {
             terminator: None,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub name: String,
+    pub params: Vec<(String, Type)>,
+    pub return_type: Option<Type>,
+    pub blocks: Vec<BasicBlock>,
 }
 
 impl Function {
@@ -80,49 +40,83 @@ impl Function {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Module {
+    pub globals: Vec<(String, Type, Option<Literal>)>,
+    pub functions: Vec<Function>,
+}
+
+impl Module {
+    pub fn new() -> Self {
+        Self {
+            globals: Vec::new(),
+            functions: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum IRInstruction {
+    Nop,
+    Label(String),
+    Load(String, String),
+    Store(String, String),
+    BinaryOp(String, String, BinOp, String),
+    UnaryOp(String, UnaryOp, String),
+    Call(String, String, Vec<String>),
+    Return(Option<String>),
+    Jump(String),
+    Branch(String, String, String),
+    Phi(String, Vec<(String, String)>),
+    Alloca(String, Type),
+    LoadFrom(String, String),
+    StoreTo(String, String),
+}
+
 pub struct IRGenerator {
-    module: Module,
     current_func: Option<String>,
-    block_counter: usize,
+    current_block: Option<String>,
     temp_counter: usize,
+    label_counter: usize,
+    locals: HashMap<String, String>,
+    blocks: Vec<BasicBlock>,
+    functions: Vec<Function>,
+    globals: Vec<(String, Type, Option<Literal>)>,
 }
 
 impl IRGenerator {
     pub fn new() -> Self {
         Self {
-            module: Module {
-                functions: Vec::new(),
-                globals: Vec::new(),
-            },
             current_func: None,
-            block_counter: 0,
+            current_block: None,
             temp_counter: 0,
+            label_counter: 0,
+            locals: HashMap::new(),
+            blocks: Vec::new(),
+            functions: Vec::new(),
+            globals: Vec::new(),
         }
     }
 
     pub fn generate(ast: &CompilationUnit) -> Result<Module, String> {
-        let mut gen = Self::new();
-        gen.generate_unit(ast)?;
-        Ok(gen.module)
+        let mut generator = Self::new();
+        generator.generate_unit(ast)?;
+        Ok(generator.build_module())
     }
 
     fn generate_unit(&mut self, unit: &CompilationUnit) -> Result<(), String> {
         for node in &unit.nodes {
             match node {
-                Node::Function(func) => self.generate_function(func)?,
-                Node::Variable(var) => self.generate_global_var(var)?,
-                Node::Struct(_) | Node::Enum(_) | Node::Import(_) => {}
-                Node::Expression(expr) => {
-                    let _ = self.generate_expression(expr)?;
-                }
+                crate::ast::Node::Function(func) => self.generate_function(func)?,
+                crate::ast::Node::Variable(var) => self.generate_global_var(var)?,
+                _ => {}
             }
         }
         Ok(())
     }
 
     fn generate_function(&mut self, func: &FunctionDef) -> Result<(), String> {
-        let params: Vec<(String, Type)> = func.params
-            .iter()
+        let params: Vec<(String, Type)> = func.params.iter()
             .map(|p| (p.name.clone(), p.type_.clone()))
             .collect();
         
@@ -132,354 +126,379 @@ impl IRGenerator {
             func.return_type.clone(),
         );
         
-        let entry_label = self.new_label("entry");
-        let mut entry_block = BasicBlock::new(entry_label);
+        self.current_func = Some(func.name.clone());
+        self.label_counter = 0;
+        self.temp_counter = 0;
+        self.blocks.clear();
+        self.locals.clear();
+        
+        let entry_block = BasicBlock::new(self.new_label("entry"));
+        self.blocks.push(entry_block);
         
         for (i, param) in func.params.iter().enumerate() {
-            entry_block.instructions.push(IRInstruction::Alloca(
-                param.name.clone(),
+            let param_name = format!("param_{}", param.name);
+            self.locals.insert(param.name.clone(), param_name.clone());
+            let block = self.blocks.last_mut().unwrap();
+            block.instructions.push(IRInstruction::Alloca(
+                param_name.clone(),
                 param.type_.clone(),
             ));
-            entry_block.instructions.push(IRInstruction::StoreVar(
-                format!("%{}", i),
-                param.name.clone(),
+            block.instructions.push(IRInstruction::Store(
+                format!("arg_{}", i),
+                param_name,
             ));
         }
         
-        self.current_func = Some(func.name.clone());
-        self.generate_block(&func.body, &mut entry_block)?;
+        self.generate_block(&func.body, &mut function)?;
+        // generate_block already moved blocks into function.blocks
         
-        if entry_block.terminator.is_none() {
-            entry_block.terminator = Some(IRInstruction::Return(None));
-        }
-        
-        function.blocks.push(entry_block);
         self.current_func = None;
         
-        self.module.functions.push(function);
+        // Store the function
+        println!("DEBUG generate_function: pushing function with {} blocks", function.blocks.len());
+        self.functions.push(function);
+        println!("DEBUG generate_function: self.functions.len()={} now", self.functions.len());
+        
         Ok(())
     }
 
-    fn generate_global_var(&mut self, var: &VariableDef) -> Result<(), String> {
-        let lit = match &var.value {
-            Expression::Literal(l) => Some(l.clone()),
-            _ => None,
-        };
-        self.module.globals.push((
-            var.name.clone(),
-            var.type_.clone().unwrap_or(Type::Infer),
-            lit,
-        ));
+    fn generate_global_var(&mut self, _var: &VariableDef) -> Result<(), String> {
         Ok(())
     }
 
-    fn generate_block(&mut self, block: &crate::ast::Block, current_block: &mut BasicBlock) -> Result<(), String> {
+    fn generate_block(&mut self, block: &Block, func: &mut Function) -> Result<(), String> {
+        println!("DEBUG generate_block: {} statements", block.statements.len());
         for stmt in &block.statements {
-            self.generate_statement(stmt, current_block)?;
+            self.generate_statement(stmt, func)?;
         }
+        println!("DEBUG generate_block before take: self.blocks={}, func.blocks={}", self.blocks.len(), func.blocks.len());
+        
+        if func.blocks.last().and_then(|b| b.terminator.as_ref()).is_none() {
+            if let Some(ref ret_type) = func.return_type {
+                if *ret_type != Type::Void {
+                    self.emit_instruction(IRInstruction::Return(Some("0".to_string())));
+                } else {
+                    self.emit_instruction(IRInstruction::Return(None));
+                }
+            } else {
+                self.emit_instruction(IRInstruction::Return(None));
+            }
+        }
+        
+        println!("DEBUG generate_block after emit: self.blocks={}", self.blocks.len());
+        func.blocks = std::mem::take(&mut self.blocks);
+        println!("DEBUG generate_block after take: func.blocks={}", func.blocks.len());
         Ok(())
     }
 
-    fn generate_statement(&mut self, stmt: &Statement, block: &mut BasicBlock) -> Result<(), String> {
+    fn generate_statement(&mut self, stmt: &Statement, func: &mut Function) -> Result<(), String> {
         match stmt {
             Statement::Expression(expr) => {
-                let _ = self.generate_expression(expr)?;
+                self.generate_expression(expr, func)?;
             }
             Statement::Variable(var) => {
-                block.instructions.push(IRInstruction::Alloca(
-                    var.name.clone(),
-                    var.type_.clone().unwrap_or(Type::Infer),
-                ));
-                let val = self.generate_expression(&var.value)?;
-                block.instructions.push(IRInstruction::StoreVar(val, var.name.clone()));
+                let temp = self.generate_expression(&var.value, func)?;
+                let var_name = format!("var_{}", var.name);
+                self.locals.insert(var.name.clone(), var_name.clone());
+                self.emit_instruction(IRInstruction::Alloca(var_name.clone(), var.type_.clone().unwrap_or(Type::Infer)));
+                self.emit_instruction(IRInstruction::Store(temp, var_name));
             }
             Statement::Return(expr) => {
                 if let Some(e) = expr {
-                    let val = self.generate_expression(e)?;
-                    block.terminator = Some(IRInstruction::Return(Some(val)));
+                    let temp = self.generate_expression(e, func)?;
+                    self.emit_instruction(IRInstruction::Return(Some(temp)));
                 } else {
-                    block.terminator = Some(IRInstruction::Return(None));
+                    self.emit_instruction(IRInstruction::Return(None));
                 }
             }
             Statement::If(if_expr) => {
-                let cond = self.generate_expression(&if_expr.condition)?;
-                
-                let then_label = self.new_label("then");
-                let else_label = if_expr.else_block.is_some() 
-                    .then(|| self.new_label("else"))
-                    .unwrap_or_else(|| self.new_label("end"));
-                let end_label = self.new_label("end");
-                
-                block.terminator = Some(IRInstruction::Branch(
-                    cond,
-                    then_label.clone(),
-                    else_label.clone(),
-                ));
-                
-                let mut then_block = BasicBlock::new(then_label);
-                self.generate_block(&if_expr.then_block, &mut then_block)?;
-                if then_block.terminator.is_none() {
-                    then_block.terminator = Some(IRInstruction::Jump(end_label.clone()));
-                }
-                block.instructions.push(IRInstruction::Label(then_label.clone()));
-                block.instructions.extend(then_block.instructions);
-                if let Some(terminator) = then_block.terminator {
-                    block.instructions.push(terminator);
-                }
-                
-                if let Some(ref else_block) = if_expr.else_block {
-                    let mut else_blk = BasicBlock::new(else_label.clone());
-                    self.generate_block(else_block, &mut else_blk)?;
-                    if else_blk.terminator.is_none() {
-                        else_blk.terminator = Some(IRInstruction::Jump(end_label.clone()));
-                    }
-                    block.instructions.push(IRInstruction::Label(else_label.clone()));
-                    block.instructions.extend(else_blk.instructions);
-                    if let Some(terminator) = else_blk.terminator {
-                        block.instructions.push(terminator);
-                    }
-                } else {
-                    block.instructions.push(IRInstruction::Label(else_label.clone()));
-                }
-                
-                block.instructions.push(IRInstruction::Label(end_label.clone()));
+                self.generate_if(if_expr, func)?;
             }
             Statement::Loop(loop_expr) => {
-                let body_label = self.new_label("loop_body");
-                let end_label = self.new_label("loop_end");
-                
-                block.instructions.push(IRInstruction::Label(body_label.clone()));
-                
-                let mut body_block = BasicBlock::new(body_label.clone());
-                self.generate_block(&loop_expr.body, &mut body_block)?;
-                if body_block.terminator.is_none() {
-                    body_block.terminator = Some(IRInstruction::Jump(body_label.clone()));
-                }
-                block.instructions.extend(body_block.instructions);
-                if let Some(terminator) = body_block.terminator {
-                    block.instructions.push(terminator);
-                }
-                
-                block.instructions.push(IRInstruction::Label(end_label.clone()));
+                self.generate_loop(loop_expr, func)?;
             }
             Statement::For(for_expr) => {
-                let iter = self.generate_expression(&for_expr.iterable)?;
-                let body_label = self.new_label("for_body");
-                let end_label = self.new_label("for_end");
-                
-                block.instructions.push(IRInstruction::Alloca(
-                    for_expr.variable.clone(),
-                    Type::Infer,
-                ));
-                block.instructions.push(IRInstruction::StoreVar(
-                    iter,
-                    for_expr.variable.clone(),
-                ));
-                block.instructions.push(IRInstruction::Label(body_label.clone()));
-                
-                let mut body_block = BasicBlock::new(body_label.clone());
-                self.generate_block(&for_expr.body, &mut body_block)?;
-                if body_block.terminator.is_none() {
-                    body_block.terminator = Some(IRInstruction::Jump(body_label.clone()));
-                }
-                block.instructions.extend(body_block.instructions);
-                if let Some(terminator) = body_block.terminator {
-                    block.instructions.push(terminator);
-                }
-                
-                block.instructions.push(IRInstruction::Label(end_label.clone()));
+                self.generate_for(for_expr, func)?;
             }
             Statement::Match(match_expr) => {
-                let val = self.generate_expression(&match_expr.value)?;
-                
-                for arm in &match_expr.arms {
-                    let arm_label = self.new_label("match_arm");
-                    block.instructions.push(IRInstruction::Label(arm_label.clone()));
-                    self.generate_block(&arm.body, block)?;
-                }
-                
-                let end_label = self.new_label("match_end");
-                block.instructions.push(IRInstruction::Label(end_label.clone()));
+                self.generate_match(match_expr, func)?;
             }
             Statement::Break => {
-                let end_label = self.new_label("break_target");
-                block.terminator = Some(IRInstruction::Jump(end_label.clone()));
+                let label = self.new_label("break");
+                self.emit_instruction(IRInstruction::Jump(label));
             }
             Statement::Continue => {
-                let cont_label = self.new_label("continue_target");
-                block.terminator = Some(IRInstruction::Jump(cont_label.clone()));
+                let label = self.new_label("continue");
+                self.emit_instruction(IRInstruction::Jump(label));
             }
         }
         Ok(())
     }
 
-    fn generate_expression(&mut self, expr: &Expression) -> Result<String, String> {
+    fn generate_expression(&mut self, expr: &Expression, func: &mut Function) -> Result<String, String> {
         match expr {
-            Expression::Literal(lit) => {
-                let temp = self.new_temp();
-                match lit {
-                    Literal::Int(n) => {
-                        self.module.globals.push((
-                            temp.clone(),
-                            Type::Int,
-                            Some(Literal::Int(*n)),
-                        ));
-                    }
-                    Literal::Float(n) => {
-                        self.module.globals.push((
-                            temp.clone(),
-                            Type::Float,
-                            Some(Literal::Float(*n)),
-                        ));
-                    }
-                    Literal::Bool(b) => {
-                        self.module.globals.push((
-                            temp.clone(),
-                            Type::Bool,
-                            Some(Literal::Bool(*b)),
-                        ));
-                    }
-                    Literal::String(s) => {
-                        self.module.globals.push((
-                            temp.clone(),
-                            Type::String,
-                            Some(Literal::String(s.clone())),
-                        ));
-                    }
-                    Literal::Char(c) => {
-                        self.module.globals.push((
-                            temp.clone(),
-                            Type::Char,
-                            Some(Literal::Char(*c)),
-                        ));
-                    }
-                    Literal::Null => {}
-                }
-                Ok(temp)
-            }
+            Expression::Literal(lit) => Ok(self.generate_literal(lit)),
             Expression::Identifier(name) => {
-                Ok(format!("%{}", name))
+                if let Some(var_name) = self.locals.get(name) {
+                    Ok(var_name.clone())
+                } else {
+                    Ok(name.clone())
+                }
             }
             Expression::BinaryOp(left, op, right) => {
-                let left_val = self.generate_expression(left)?;
-                let right_val = self.generate_expression(right)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                let left_temp = self.generate_expression(left, func)?;
+                let right_temp = self.generate_expression(right, func)?;
+                let result = self.new_temp();
+                self.emit_instruction(IRInstruction::BinaryOp(
+                    result.clone(),
+                    left_temp,
+                    op.clone(),
+                    right_temp,
+                ));
+                Ok(result)
             }
             Expression::UnaryOp(op, expr) => {
-                let val = self.generate_expression(expr)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                let operand = self.generate_expression(expr, func)?;
+                let result = self.new_temp();
+                self.emit_instruction(IRInstruction::UnaryOp(result.clone(), op.clone(), operand));
+                Ok(result)
             }
-            Expression::Call { func, args } => {
-                let func_name = match func.as_ref() {
-                    Expression::Identifier(name) => name.clone(),
-                    _ => return Err("Only identifier calls supported".to_string()),
-                };
-                let temp = self.new_temp();
-                Ok(temp)
+            Expression::Call { func: func_expr, args } => {
+                let func_name = self.generate_expression(func_expr, func)?;
+                let mut arg_temps = Vec::new();
+                for arg in args {
+                    arg_temps.push(self.generate_expression(arg, func)?);
+                }
+                let result = self.new_temp();
+                self.emit_instruction(IRInstruction::Call(
+                    result.clone(),
+                    func_name,
+                    arg_temps,
+                ));
+                Ok(result)
             }
             Expression::MethodCall { object, method, args } => {
-                let _ = self.generate_expression(object)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                let object_temp = self.generate_expression(object, func)?;
+                let mut arg_temps = vec![object_temp];
+                for arg in args {
+                    arg_temps.push(self.generate_expression(arg, func)?);
+                }
+                let result = self.new_temp();
+                self.emit_instruction(IRInstruction::Call(
+                    result.clone(),
+                    method.clone(),
+                    arg_temps,
+                ));
+                Ok(result)
             }
-            Expression::FieldAccess { object, field } => {
-                let _ = self.generate_expression(object)?;
-                let temp = self.new_temp();
-                Ok(temp)
+            Expression::FieldAccess { object, field: _ } => {
+                self.generate_expression(object, func)?;
+                let result = self.new_temp();
+                Ok(result)
             }
             Expression::Index { collection, index } => {
-                let _ = self.generate_expression(collection)?;
-                let _ = self.generate_expression(index)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                let coll_temp = self.generate_expression(collection, func)?;
+                let idx_temp = self.generate_expression(index, func)?;
+                let result = self.new_temp();
+                self.emit_instruction(IRInstruction::BinaryOp(
+                    result.clone(),
+                    coll_temp,
+                    BinOp::Add,
+                    idx_temp,
+                ));
+                Ok(result)
             }
             Expression::Tuple(exprs) => {
                 for e in exprs {
-                    let _ = self.generate_expression(e)?;
+                    self.generate_expression(e, func)?;
                 }
-                let temp = self.new_temp();
-                Ok(temp)
+                Ok(self.new_temp())
             }
             Expression::Array(exprs) => {
                 for e in exprs {
-                    let _ = self.generate_expression(e)?;
+                    self.generate_expression(e, func)?;
                 }
-                let temp = self.new_temp();
-                Ok(temp)
+                Ok(self.new_temp())
             }
             Expression::Block(block) => {
-                let mut dummy_block = BasicBlock::new("dummy".to_string());
-                self.generate_block(block, &mut dummy_block)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                let last = block.statements.last();
+                if let Some(Statement::Expression(expr)) = last {
+                    self.generate_expression(expr, func)
+                } else {
+                    for stmt in &block.statements {
+                        self.generate_statement(stmt, func)?;
+                    }
+                    Ok(self.new_temp())
+                }
             }
             Expression::Closure { params, body } => {
-                let temp = self.new_temp();
-                Ok(temp)
+                for param in params {
+                    self.locals.insert(param.name.clone(), format!("closure_{}", param.name));
+                }
+                self.generate_block(body, func)?;
+                for param in params {
+                    self.locals.remove(&param.name);
+                }
+                Ok(self.new_temp())
             }
             Expression::If(if_expr) => {
-                let _ = self.generate_expression(&if_expr.condition)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                self.generate_if(if_expr, func)?;
+                Ok(self.new_temp())
             }
             Expression::Match(match_expr) => {
-                let _ = self.generate_expression(&match_expr.value)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                self.generate_match(match_expr, func)?;
+                Ok(self.new_temp())
             }
             Expression::Assign { target, value } => {
-                let _ = self.generate_expression(target)?;
-                let val = self.generate_expression(value)?;
-                let temp = self.new_temp();
-                Ok(temp)
+                let var_name = self.generate_expression(target, func)?;
+                let val_temp = self.generate_expression(value, func)?;
+                self.emit_instruction(IRInstruction::Store(val_temp, var_name.clone()));
+                Ok(var_name)
             }
         }
     }
 
-    fn new_label(&mut self, prefix: &str) -> String {
-        let label = format!("{}{}", prefix, self.block_counter);
-        self.block_counter += 1;
-        label
+    fn generate_if(&mut self, if_expr: &IfExpr, func: &mut Function) -> Result<(), String> {
+        let cond_temp = self.generate_expression(&if_expr.condition, func)?;
+        let then_label = self.new_label("then");
+        let else_label = self.new_label("else");
+        let merge_label = self.new_label("merge");
+        
+        self.emit_instruction(IRInstruction::Branch(
+            cond_temp,
+            then_label.clone(),
+            else_label.clone(),
+        ));
+        
+        self.emit_label(then_label);
+        for stmt in &if_expr.then_block.statements {
+            self.generate_statement(stmt, func)?;
+        }
+        self.emit_instruction(IRInstruction::Jump(merge_label.clone()));
+        
+        if let Some(ref else_block) = if_expr.else_block {
+            self.emit_label(else_label);
+            for stmt in &else_block.statements {
+                self.generate_statement(stmt, func)?;
+            }
+            self.emit_instruction(IRInstruction::Jump(merge_label.clone()));
+        } else {
+            self.emit_label(else_label);
+            self.emit_instruction(IRInstruction::Jump(merge_label.clone()));
+        }
+        
+        self.emit_label(merge_label);
+        Ok(())
+    }
+
+    fn generate_loop(&mut self, loop_expr: &LoopExpr, func: &mut Function) -> Result<(), String> {
+        let header_label = self.new_label("loop_header");
+        let body_label = self.new_label("loop_body");
+        let exit_label = self.new_label("loop_exit");
+        
+        self.emit_label(header_label.clone());
+        self.emit_instruction(IRInstruction::Jump(body_label.clone()));
+        
+        self.emit_label(body_label);
+        for stmt in &loop_expr.body.statements {
+            self.generate_statement(stmt, func)?;
+        }
+        self.emit_instruction(IRInstruction::Jump(header_label));
+        
+        self.emit_label(exit_label);
+        Ok(())
+    }
+
+    fn generate_for(&mut self, for_expr: &ForExpr, func: &mut Function) -> Result<(), String> {
+        let iter_temp = self.generate_expression(&for_expr.iterable, func)?;
+        let var_name = format!("for_{}", for_expr.variable);
+        self.locals.insert(for_expr.variable.clone(), var_name.clone());
+        
+        let header_label = self.new_label("for_header");
+        let body_label = self.new_label("for_body");
+        let exit_label = self.new_label("for_exit");
+        
+        self.emit_label(header_label.clone());
+        self.emit_instruction(IRInstruction::LoadFrom(var_name.clone(), iter_temp));
+        self.emit_instruction(IRInstruction::Jump(body_label.clone()));
+        
+        self.emit_label(body_label);
+        for stmt in &for_expr.body.statements {
+            self.generate_statement(stmt, func)?;
+        }
+        self.emit_instruction(IRInstruction::Jump(header_label));
+        
+        self.emit_label(exit_label);
+        Ok(())
+    }
+
+    fn generate_match(&mut self, match_expr: &MatchExpr, func: &mut Function) -> Result<(), String> {
+        let _value_temp = self.generate_expression(&match_expr.value, func)?;
+        
+        for arm in &match_expr.arms {
+            let arm_label = self.new_label("match_arm");
+            self.emit_label(arm_label);
+            for stmt in &arm.body.statements {
+                self.generate_statement(stmt, func)?;
+            }
+            let exit_label = self.new_label("match_exit");
+            self.emit_instruction(IRInstruction::Jump(exit_label));
+        }
+        
+        let exit_label = self.new_label("match_exit");
+        self.emit_label(exit_label);
+        Ok(())
+    }
+
+    fn generate_literal(&self, lit: &Literal) -> String {
+        match lit {
+            Literal::Int(n) => n.to_string(),
+            Literal::Float(n) => n.to_string(),
+            Literal::Bool(b) => if *b { "1".to_string() } else { "0".to_string() },
+            Literal::Char(c) => format!("'{}'", c),
+            Literal::String(s) => format!("\"{}\"", s),
+            Literal::Null => "NULL".to_string(),
+        }
+    }
+
+    fn emit_instruction(&mut self, instr: IRInstruction) {
+        println!("DEBUG emit_instruction: {} blocks in self.blocks", self.blocks.len());
+        if let Some(block) = self.blocks.last_mut() {
+            block.instructions.push(instr);
+            println!("DEBUG: Added instruction to block {}", block.label);
+        } else {
+            println!("DEBUG: No block to add instruction to!");
+        }
+    }
+
+    fn emit_label(&mut self, label: String) {
+        if let Some(block) = self.blocks.last_mut() {
+            block.terminator = Some(IRInstruction::Label(label));
+        }
+        let new_block = BasicBlock::new(self.new_label("temp"));
+        self.blocks.push(new_block);
     }
 
     fn new_temp(&mut self) -> String {
-        let temp = format!("%t{}", self.temp_counter);
+        let temp = format!("%{}", self.temp_counter);
         self.temp_counter += 1;
         temp
+    }
+
+    fn new_label(&mut self, prefix: &str) -> String {
+        let label = format!("{}{}", prefix, self.label_counter);
+        self.label_counter += 1;
+        label
+    }
+
+    fn build_module(mut self) -> Module {
+        let mut module = Module::new();
+        module.functions = self.functions;
+        module.globals = self.globals;
+        module
     }
 }
 
 pub fn generate(ast: &CompilationUnit) -> Result<Module, String> {
     IRGenerator::generate(ast)
-}
-
-impl fmt::Display for Module {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for global in &self.globals {
-            writeln!(f, "global {} {} = {:?}", global.0, global.1, global.2)?;
-        }
-        
-        for func in &self.functions {
-            writeln!(f, "fn {}(", func.name)?;
-            for (i, (name, type_)) in func.params.iter().enumerate() {
-                if i > 0 { write!(f, ", ")?; }
-                write!(f, "{}: {}", name, type_)?;
-            }
-            writeln!(f, ")")?;
-            
-            for block in &func.blocks {
-                writeln!(f, "  {}:", block.label)?;
-                for instr in &block.instructions {
-                    writeln!(f, "    {:?}", instr)?;
-                }
-                if let Some(ref term) = block.terminator {
-                    writeln!(f, "    {:?}", term)?;
-                }
-            }
-            writeln!(f)?;
-        }
-        Ok(())
-    }
 }

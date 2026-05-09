@@ -1,0 +1,91 @@
+fn main()
+  say "=== Entity Examples ==="
+  say ""
+  
+  say "Person:"
+  let person = Person.new("Alice", 25)
+  say person.greet()
+  person.birthday()
+  say "Age after birthday: #{person.get_age()}"
+  
+  say ""
+  say "Calculator:"
+  let calc = Calculator.new()
+  calc.add(5, 3)
+  say "Result: #{calc.get_result()}"
+  calc.multiply(2)
+  say "After multiply by 2: #{calc.get_result()}"
+  
+  say ""
+  say "Counter:"
+  let counter = Counter.new()
+  counter.increment()
+  counter.increment()
+  counter.increment()
+  say "Counter value: #{counter.get_count()}"
+~
+
+entity Person
+  field name
+  field age
+  
+  func new(name, age)
+    @name = name
+    @age = age
+  ~
+  
+  func greet
+    "Hello, I'm #{@name} and I'm #{@age} years old"
+  ~
+  
+  func birthday
+    @age = @age + 1
+    say "#{@name} is now #{@age}"
+  ~
+  
+  func get_age
+    @age
+  ~
+~
+
+entity Calculator
+  field result
+  
+  func new
+    @result = 0
+  ~
+  
+  func add(a, b)
+    @result = a + b
+    @result
+  ~
+  
+  func multiply(factor)
+    @result = @result * factor
+    @result
+  ~
+  
+  func get_result
+    @result
+  ~
+~
+
+entity Counter
+  field count
+  
+  func new
+    @count = 0
+  ~
+  
+  func increment
+    @count = @count + 1
+  ~
+  
+  func decrement
+    @count = @count - 1
+  ~
+  
+  func get_count
+    @count
+  ~
+~

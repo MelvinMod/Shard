@@ -1,0 +1,38 @@
+fn main() -> Void
+    say "=== Comptime Evaluation ==="
+    say ""
+    
+    let x: i32 = comptime { 2 + 2 }
+    say "Comptime 2 + 2 = #{x}"
+    
+    let size: Int = comptime { size_of::<i32>() }
+    say "Size of i32 = #{size}"
+    
+    say ""
+    say "=== ASM Blocks ==="
+    say ""
+    
+    let result: i32 = asm_add(5, 3)
+    say "ASM add(5, 3) = #{result}"
+    
+    say ""
+    say "=== Type Introspection ==="
+    say ""
+    
+    let type_name: String = type_name_of::<i32>()
+    say "Type name of i32: #{type_name}"
+~
+
+fn asm_add(a: i32, b: i32) -> i32
+    asm {
+        mov eax, a
+        add eax, b
+        ret
+    }
+~
+
+fn type_name_of<T>() -> String
+    comptime {
+        std::any::type_name::<T>()
+    }
+~

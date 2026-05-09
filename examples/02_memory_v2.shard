@@ -1,0 +1,46 @@
+fn main() -> Void
+    say "=== Memory Management ==="
+    say ""
+    
+    let x: i32 = 42
+    say "x = #{x}"
+    
+    let ptr: *i32 = alloc(i32)
+    *ptr = 100
+    say "*ptr = #{*ptr}"
+    free(ptr)
+    
+    say ""
+    say "=== Ownership & Borrowing ==="
+    say ""
+    
+    let data: String = "Hello"
+    let ref_data: &String = &data
+    say "Original: #{data}"
+    say "Borrowed: #{*ref_data}"
+    
+    say ""
+    say "=== Defer for Cleanup ==="
+    say ""
+    
+    defer {
+        say "This runs when scope exits"
+    }
+    say "Inside scope"
+~
+
+fn alloc<T>() -> *T
+    unsafe {
+        malloc(size_of::<T>()) as *T
+    }
+~
+
+fn free(ptr: *Void) -> Void
+    unsafe {
+        free(ptr)
+    }
+~
+
+fn size_of<T>() -> Int
+    std::mem::size_of::<T>()
+~

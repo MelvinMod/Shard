@@ -1,0 +1,6 @@
+fn main()
+  say "Hello, World!"
+  say "Welcome to Shard Programming Language"
+  say ""
+  say "Author: MelvinSGjr (MelvinMod)"
+~

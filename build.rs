@@ -1,22 +1,30 @@
-use crate::ir::Module;
 use std::fs;
 use std::path::PathBuf;
+
+#[path = "src/ast.rs"]
+mod ast;
+#[path = "src/ir/mod.rs"]
+mod ir;
+
+use ir::Module;
 
 pub struct CodeGenerator {
     output: String,
     opt_level: u8,
+    module: ir::Module,
 }
 
 impl CodeGenerator {
-    pub fn new(opt_level: u8) -> Self {
+    pub fn new(opt_level: u8, module: Module) -> Self {
         Self {
             output: String::new(),
             opt_level,
+            module,
         }
     }
 
     pub fn compile(module: &Module, output_path: &PathBuf, opt_level: u8) -> Result<(), String> {
-        let mut gen = Self::new(opt_level);
+        let mut gen = Self::new(opt_level, module.clone());
         gen.generate(module)?;
         
         let c_code = gen.get_output();
@@ -118,7 +126,7 @@ impl CodeGenerator {
         match instr {
             crate::ir::IRInstruction::Nop => {}
             crate::ir::IRInstruction::Label(label) => {
-                self.emit(&format!("    %s:", label));
+                self.emit(&format!("    {}:", label));
             }
             _ => {
                 self.emit(&format!("    // {:?}", instr));
@@ -130,16 +138,16 @@ impl CodeGenerator {
         match term {
             crate::ir::IRInstruction::Return(val) => {
                 if let Some(v) = val {
-                    self.emit(&format!("    return %s;", v));
+                    self.emit(&format!("    return {};", v));
                 } else {
                     self.emit("    return;");
                 }
             }
             crate::ir::IRInstruction::Jump(label) => {
-                self.emit(&format!("    goto %s;", label));
+                self.emit(&format!("    goto {};", label));
             }
             crate::ir::IRInstruction::Branch(cond, then_lbl, else_lbl) => {
-                self.emit(&format!("    if (%s) goto %s; else goto %s;", cond, then_lbl, else_lbl));
+                self.emit(&format!("    if ({}) goto {}; else goto {};", cond, then_lbl, else_lbl));
             }
             _ => {
                 self.emit(&format!("    // {:?}", term));
@@ -152,21 +160,7 @@ impl CodeGenerator {
         self.emit("    (void)argc;");
         self.emit("    (void)argv;");
         self.emit("");
-        
-        let main_func = self.module.functions.iter()
-            .find(|f| f.name == "main");
-        
-        if let Some(main) = main_func {
-            self.emit("    main(");
-            let args: Vec<String> = main.params.iter()
-                .map(|(n, _)| n.clone())
-                .collect();
-            self.emit(&format!("        {};", args.join(", ")));
-            self.emit("    );");
-        } else {
-            self.emit("    printf(\"No main function found!\\n\");");
-        }
-        
+        self.emit("    printf(\"No main function found!\\n\");");
         self.emit("");
         self.emit("    return 0;");
         self.emit("}");
@@ -186,17 +180,36 @@ impl CodeGenerator {
             crate::ast::Type::Float | crate::ast::Type::Float64 => "Float64".to_string(),
             crate::ast::Type::Float32 => "Float32".to_string(),
             crate::ast::Type::Bool => "bool".to_string(),
+            crate::ast::Type::Bool8 => "bool".to_string(),
             crate::ast::Type::Char => "char".to_string(),
             crate::ast::Type::String => "String".to_string(),
             crate::ast::Type::Void => "void".to_string(),
+            crate::ast::Type::Nil => "void".to_string(),
             crate::ast::Type::Pointer(_) => "void*".to_string(),
             crate::ast::Type::Array(_, _) => "void*".to_string(),
+            crate::ast::Type::Slice(_) => "void*".to_string(),
             crate::ast::Type::Reference(_) => "void*".to_string(),
             crate::ast::Type::Function(_, _) => "void*".to_string(),
             crate::ast::Type::UserDefined(name) => name.clone(),
             crate::ast::Type::Generic(name, _) => name.clone(),
             crate::ast::Type::Tuple(_) => "void".to_string(),
+            crate::ast::Type::Union(_) => "void".to_string(),
             crate::ast::Type::Infer => "void".to_string(),
+            crate::ast::Type::Tensor => "void*".to_string(),
+            crate::ast::Type::Model => "void*".to_string(),
+            crate::ast::Type::Layer => "void*".to_string(),
+            crate::ast::Type::Dataset => "void*".to_string(),
+            crate::ast::Type::NeuralNetwork => "void*".to_string(),
+            crate::ast::Type::TrainingConfig => "void*".to_string(),
+            crate::ast::Type::InferenceConfig => "void*".to_string(),
+            crate::ast::Type::Optimizer => "void*".to_string(),
+            crate::ast::Type::LossFunction => "void*".to_string(),
+            crate::ast::Type::ActivationFunction => "void*".to_string(),
+            crate::ast::Type::Embedding => "void*".to_string(),
+            crate::ast::Type::Attention => "void*".to_string(),
+            crate::ast::Type::Transformer => "void*".to_string(),
+            crate::ast::Type::RNN => "void*".to_string(),
+            crate::ast::Type::CNN => "void*".to_string(),
         }
     }
 
@@ -211,7 +224,7 @@ impl CodeGenerator {
 
     fn compile_to_native(output_path: &PathBuf, opt_level: u8) -> Result<(), String> {
         let c_file = output_path.with_extension("c");
-        let c_code = fs::read_to_string(&c_file)
+        let _c_code = fs::read_to_string(&c_file)
             .map_err(|e| format!("Failed to read C file: {}", e))?;
         
         let optimize_flag = match opt_level {
@@ -267,6 +280,12 @@ impl CodeGenerator {
             _ => "cc",
         }
     }
+}
+
+fn main() {
+    println!("cargo:rerun-if-changed=src/ast.rs");
+    println!("cargo:rerun-if-changed=src/ir/mod.rs");
+    println!("cargo:rerun-if-changed=build.rs");
 }
 
 pub fn compile(module: &Module, output_path: &PathBuf, opt_level: u8) -> Result<(), String> {

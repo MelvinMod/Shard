@@ -1,7 +1,3 @@
-use crate::ast::{Literal, Type};
-use std::iter::Peekable;
-use std::str::Chars;
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     // Literals
@@ -19,6 +15,7 @@ pub enum Token {
     Return,
     If,
     Else,
+    ElsIf,
     Loop,
     While,
     For,
@@ -26,6 +23,10 @@ pub enum Token {
     Break,
     Continue,
     Match,
+    Case,
+    When,
+    Then,
+    Unless,
     Struct,
     Enum,
     Impl,
@@ -42,14 +43,58 @@ pub enum Token {
     Box,
     Vec,
     Null,
+    Nil,
     True,
     False,
     Self_,
     Underscore,
     Yield,
-    Type,
     Delegate,
     Alias,
+    
+    // Crystal-like
+    Macro,
+    Fun,
+    Lib,
+    Record,
+    Union,
+    Annotation,
+    Is,
+    RespondsTo,
+    Include,
+    Extend,
+    Primitive,
+    Forward,
+    Abstract,
+    Final,
+    Def,
+    Class,
+    Property,
+    Getter,
+    Setter,
+    Do,
+    End,
+    And,
+    Or,
+    Not,
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Percent,
+    Ampersand,
+    Pipe,
+    Caret,
+    Tilde,
+    Bang,
+    Eq,
+    Lt,
+    Gt,
+    Dot,
+    DoubleDot,
+    Arrow,
+    DoubleArrow,
+    FatArrow,
     
     // AI Keywords
     Neural,
@@ -73,64 +118,6 @@ pub enum Token {
     CNN,
     LSTM,
     GRU,
-    
-    // Crystal-like
-    Macro,
-    Fun,
-    Lib,
-    Struct,
-    Record,
-    Union,
-    UnionType,
-    Enum,
-    Annotation,
-    UnionOf,
-    Is,
-    As,
-    RespondsTo,
-    Include,
-    Extend,
-    Primitive,
-    Forward,
-    Abstract,
-    Final,
-    Def,
-    Class,
-    Property,
-    Getter,
-    Setter,
-    Do,
-    End,
-    When,
-    Unless,
-    Then,
-    Nil,
-    True,
-    False,
-    And,
-    Or,
-    Not,
-    In,
-    Is,
-    As,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Percent,
-    Ampersand,
-    Pipe,
-    Caret,
-    Tilde,
-    Bang,
-    Eq,
-    Lt,
-    Gt,
-    Dot,
-    DoubleDot,
-    Arrow,
-    DoubleArrow,
-    FatArrow,
     
     // Delimiters
     LParen,
@@ -179,7 +166,6 @@ pub enum Token {
 pub fn lex(source: &str) -> Result<Vec<Token>, String> {
     let mut tokens = Vec::new();
     let mut chars = source.chars().peekable();
-    let mut line = 1;
     
     while let Some(c) = chars.next() {
         match c {
@@ -187,7 +173,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
             ' ' | '\t' | '\r' => continue,
             '\n' => {
                 tokens.push(Token::Newline);
-                line += 1;
             }
             
             // Single-line comment
@@ -228,19 +213,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                 tokens.push(Token::Comment(comment));
             }
             
-            // Doc comment
-            '/' if chars.peek() == Some(&'/') && chars.clone().skip(1).next() == Some('/') => {
-                chars.next();
-                let mut comment = String::new();
-                while let Some(&ch) = chars.peek() {
-                    if ch == '\n' {
-                        break;
-                    }
-                    comment.push(chars.next().unwrap());
-                }
-                tokens.push(Token::DocComment(comment));
-            }
-            
             // String literal
             '"' => {
                 let mut string = String::new();
@@ -256,7 +228,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                             Some('t') => string.push('\t'),
                             Some('r') => string.push('\r'),
                             Some('0') => string.push('\0'),
-                            Some('\'') => string.push('\''),
                             Some('"') => string.push('"'),
                             Some('\\') => string.push('\\'),
                             Some(ch) => string.push(ch),
@@ -284,7 +255,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                             Some('t') => char_val.push('\t'),
                             Some('r') => char_val.push('\r'),
                             Some('0') => char_val.push('\0'),
-                            Some('\'') => char_val.push('\''),
                             Some('"') => char_val.push('"'),
                             Some('\\') => char_val.push('\\'),
                             Some(ch) => char_val.push(ch),
@@ -371,16 +341,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                             .map_err(|e| format!("Invalid float: {}", e))?;
                         tokens.push(Token::FloatLiteral(val));
                     } else {
-                        // Check for type suffix
-                        let mut suffix = String::new();
-                        while let Some(&ch) = chars.peek() {
-                            if ch.is_ascii_alphabetic() || ch == '_' {
-                                suffix.push(chars.next().unwrap());
-                            } else {
-                                break;
-                            }
-                        }
-                        
                         let clean = num_str.replace('_', "");
                         let val = clean.parse::<i64>()
                             .map_err(|e| format!("Invalid integer: {}", e))?;
@@ -411,7 +371,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                     "return" => Token::Return,
                     "if" => Token::If,
                     "else" => Token::Else,
-                    "elsif" => Token::ElseIf,
+                    "elsif" => Token::ElsIf,
                     "unless" => Token::Unless,
                     "loop" => Token::Loop,
                     "while" => Token::While,
@@ -425,7 +385,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                     "then" => Token::Then,
                     "struct" => Token::Struct,
                     "enum" => Token::Enum,
-                    "class" => Token::Class,
                     "impl" => Token::Impl,
                     "use" => Token::Use,
                     "as" => Token::As,
@@ -446,7 +405,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                     "self" => Token::Self_,
                     "_" => Token::Underscore,
                     "yield" => Token::Yield,
-                    "type" => Token::Type,
                     "delegate" => Token::Delegate,
                     "alias" => Token::Alias,
                     "macro" => Token::Macro,
@@ -464,29 +422,6 @@ pub fn lex(source: &str) -> Result<Vec<Token>, String> {
                     "or" => Token::Or,
                     "not" => Token::Not,
                     "is" => Token::Is,
-                    
-                    // AI Keywords
-                    "neural" => Token::Neural,
-                    "network" => Token::Network,
-                    "layer" => Token::Layer,
-                    "train" => Token::Train,
-                    "inference" => Token::Inference,
-                    "tensor" => Token::Tensor,
-                    "model" => Token::Model,
-                    "dataset" => Token::Dataset,
-                    "epoch" => Token::Epoch,
-                    "batch" => Token::Batch,
-                    "learning_rate" => Token::LearningRate,
-                    "optimizer" => Token::Optimizer,
-                    "loss" => Token::Loss,
-                    "accuracy" => Token::Accuracy,
-                    "embedding" => Token::Embedding,
-                    "attention" => Token::Attention,
-                    "transformer" => Token::Transformer,
-                    "rnn" => Token::RNN,
-                    "cnn" => Token::CNN,
-                    "lstm" => Token::LSTM,
-                    "gru" => Token::GRU,
                     
                     // AI Keywords
                     "neural" => Token::Neural,

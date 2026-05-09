@@ -1,3 +1,5 @@
+use crate::lexer::Token;
+
 use crate::ast::{
     CompilationUnit, Node, FunctionDef, VariableDef, Statement, Expression,
     Type, Literal, BinOp, UnaryOp,
@@ -19,9 +21,16 @@ impl TypeChecker {
     pub fn new() -> Self {
         let mut env = HashMap::new();
         
+        // Built-in constants
         env.insert("true".to_string(), Type::Bool);
         env.insert("false".to_string(), Type::Bool);
         env.insert("null".to_string(), Type::Infer);
+        
+        // Built-in functions
+        env.insert("say".to_string(), Type::Function(vec![Type::String], None));
+        env.insert("print".to_string(), Type::Function(vec![Type::String], None));
+        env.insert("len".to_string(), Type::Function(vec![Type::String], Some(Box::new(Type::Int))));
+        env.insert("range".to_string(), Type::Function(vec![Type::Int, Type::Int], Some(Box::new(Type::Int))));
         
         Self {
             env,
@@ -233,17 +242,14 @@ impl TypeChecker {
                 }
                 Ok(Type::Infer)
             }
-            Expression::MethodCall { object, method, args } => {
+            Expression::MethodCall { object, method: _, args } => {
                 self.infer_expression(object)?;
                 for arg in args {
                     self.infer_expression(arg)?;
                 }
                 Ok(Type::Infer)
             }
-            Expression::FieldAccess { object, field } => {
-                self.infer_expression(object)?;
-                Ok(Type::Infer)
-            }
+            Expression::FieldAccess { object: _, field: _ } => Ok(Type::Infer),
             Expression::Index { collection, index } => {
                 self.infer_expression(collection)?;
                 self.infer_expression(index)?;

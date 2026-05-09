@@ -1,0 +1,38 @@
+fn main()
+  say "=== Data Structure Examples ==="
+  say ""
+  
+  say "Array Operations:"
+  let numbers = [1, 2, 3, 4, 5]
+  say "Original: #{numbers}"
+  
+  say "Doubled: #{numbers.map { |n| n * 2 }}"
+  say "Evens: #{numbers.select { |n| n % 2 == 0 }}"
+  say "Sum: #{numbers.reduce(0, &:+)}"
+  
+  say ""
+  say "Hash Operations:"
+  let person = {
+    name: "Alice",
+    age: 25,
+    city: "New York"
+  }
+  
+  say "Name: #{person[:name]}"
+  say "Age: #{person[:age]}"
+  say "City: #{person[:city]}"
+  
+  say ""
+  say "String Operations:"
+  let text = "Hello World"
+  say "Original: #{text}"
+  say "Uppercase: #{text.upper}"
+  say "Lowercase: #{text.lower}"
+  say "Length: #{text.length}"
+  say "Contains 'World': #{text.contains("World")}"
+  
+  say ""
+  say "Range Operations:"
+  say "1 to 5: #{(1..5).collect}"
+  say "Even numbers 1-10: #{(1..10).select { |n| n % 2 == 0 }}"
+~

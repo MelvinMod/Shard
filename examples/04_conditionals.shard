@@ -1,0 +1,43 @@
+fn main()
+  say "=== If/Else Example ==="
+  let age = 18
+  
+  when age >= 18
+    say "You are an adult"
+  else
+    say "You are a minor"
+  ~
+  
+  say ""
+  say "=== Grading Example ==="
+  let score = 85
+  
+  when score >= 90
+    say "Grade: A"
+  elsif score >= 80
+    say "Grade: B"
+  elsif score >= 70
+    say "Grade: C"
+  else
+    say "Grade: F"
+  ~
+  
+  say ""
+  say "=== Unless Example ==="
+  let valid = false
+  
+  unless valid
+    say "Input is not valid"
+  ~
+  
+  say ""
+  say "=== Match Example ==="
+  let day = 3
+  
+  match day
+    1 => say "Monday"
+    2 => say "Tuesday"
+    3 => say "Wednesday"
+    _ => say "Other day"
+  ~
+~

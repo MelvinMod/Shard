@@ -20,12 +20,8 @@ lazy_static = "1.4"
 cc = "1.0"
 
 [[bin]]
-name = "shardc"
+name = "shard"
 path = "src/main.rs"
-
-[[bin]]
-name = "shard-run"
-path = "src/run.rs"
 
 [profile.release]
 opt-level = 3

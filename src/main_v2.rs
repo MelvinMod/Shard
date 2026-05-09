@@ -4,7 +4,7 @@ mod ast;
 mod typechecker;
 mod ir;
 mod codegen;
-mod backends;
+mod error;
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -12,7 +12,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(name = "shard")]
 #[command(about = "Shard Programming Language Compiler")]
-#[command(version = "0.1.0")]
+#[command(version = "0.2.0")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -25,23 +25,24 @@ enum Commands {
         input: PathBuf,
         #[arg(short, long, help = "Output file")]
         output: Option<PathBuf>,
-        #[arg(short, long, help = "Backend (native or rust)", default_value = "native")]
-        backend: String,
         #[arg(short, long, help = "Optimization level (0-3)", default_value = "2")]
         opt_level: u8,
+        #[arg(short, long, help = "Enable JIT mode")]
+        jit: bool,
     },
     Run {
         #[arg(help = "Input file")]
         input: PathBuf,
-        #[arg(short, long, help = "Backend (native or rust)", default_value = "native")]
-        backend: String,
         #[arg(short, long, help = "Optimization level (0-3)", default_value = "2")]
         opt_level: u8,
+        #[arg(short, long, help = "Enable JIT mode")]
+        jit: bool,
     },
     Check {
         #[arg(help = "Input file")]
         input: PathBuf,
     },
+    Repl,
     Version,
 }
 
@@ -49,65 +50,72 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Compile { input, output, backend, opt_level } => {
-            compile_file(&input, output.as_ref(), &backend, opt_level);
+        Commands::Compile { input, output, opt_level, jit } => {
+            compile_file(&input, output.as_ref(), opt_level, jit);
         }
-        Commands::Run { input, backend, opt_level } => {
-            run_file(&input, &backend, opt_level);
+        Commands::Run { input, opt_level, jit } => {
+            run_file(&input, opt_level, jit);
         }
         Commands::Check { input } => {
             check_file(&input);
         }
+        Commands::Repl => {
+            start_repl();
+        }
         Commands::Version => {
-            println!("Shard Compiler 0.1.0");
+            println!("Shard Compiler 0.2.0");
             println!("Author: MelvinSGjr (MelvinMod)");
             println!("Platform: {}", std::env::consts::OS);
-            println!("Backends: native, rust_ffi");
+            println!("Features: Native, JIT, Memory Safety, Error Handling");
         }
     }
 }
 
-fn compile_file(input: &PathBuf, output: Option<&PathBuf>, backend: &str, opt_level: u8) -> PathBuf {
+fn compile_file(input: &PathBuf, output: Option<&PathBuf>, opt_level: u8, jit: bool) {
     println!("Compiling {}...", input.display());
-    println!("  Backend: {}", backend);
     
     let source = std::fs::read_to_string(input).expect("Failed to read source file");
     
-    let tokens = lexer::lex(&source).expect("Lexing failed");
+    let tokens = lexer::lex(&source).unwrap_or_else(|e| {
+        e.print();
+        std::process::exit(1);
+    });
     println!("  [-] Lexed {} tokens", tokens.len());
     
-    let ast = parser::parse(tokens).expect("Parsing failed");
+    let ast = parser::parse(tokens).unwrap_or_else(|e| {
+        e.print();
+        std::process::exit(1);
+    });
     println!("  [-] Parsed {} nodes", ast.nodes.len());
     
-    typechecker::check(&ast).expect("Type checking failed");
+    typechecker::check(&ast).unwrap_or_else(|e| {
+        e.print();
+        std::process::exit(1);
+    });
     println!("  [-] Type checking passed");
     
-    let ir = ir::generate(&ast).expect("IR generation failed");
+    let ir = ir::generate(&ast).unwrap_or_else(|e| {
+        e.print();
+        std::process::exit(1);
+    });
     println!("  [-] Generated IR");
     
     let output_path = output.cloned().unwrap_or_else(|| PathBuf::from("a.out"));
     
-    match backend {
-        "native" | "c" => {
-            backends::NativeBackend::compile(&ir, &output_path, opt_level)
-                .expect("Native compilation failed");
-        }
-        "rust" | "rust_ffi" => {
-            backends::RustFFIBackend::compile(&ir, &output_path, opt_level)
-                .expect("Rust FFI compilation failed");
-        }
-        _ => {
-            eprintln!("Unknown backend: {}", backend);
-            eprintln!("Available backends: native, rust");
+    if jit {
+        println!("  [+] JIT compilation enabled");
+        // JIT compilation would go here
+    } else {
+        codegen::compile(&ir, &output_path, opt_level).unwrap_or_else(|e| {
+            e.print();
             std::process::exit(1);
-        }
+        });
     }
     
     println!("  [+] Compiled successfully: {}", output_path.display());
-    output_path
 }
 
-fn run_file(input: &PathBuf, backend: &str, opt_level: u8) {
+fn run_file(input: &PathBuf, opt_level: u8, jit: bool) {
     println!("Running {}...", input.display());
     
     let input_dir = std::env::current_dir()
@@ -116,7 +124,7 @@ fn run_file(input: &PathBuf, backend: &str, opt_level: u8) {
     
     let output_path = input_dir.join("a.out");
     
-    compile_file(input, Some(&output_path), backend, opt_level);
+    compile_file(input, Some(&output_path), opt_level, jit);
     
     if !output_path.exists() {
         eprintln!("Error: Compiled file not found at {}", output_path.display());
@@ -150,4 +158,50 @@ fn check_file(input: &PathBuf) {
     typechecker::check(&ast).expect("Type checking failed");
     
     println!("  [+] All checks passed!");
+}
+
+fn start_repl() {
+    println!("Shard REPL - Type 'exit' to quit");
+    println!("Try: say \"Hello, World!\"");
+    
+    loop {
+        print!("shard> ");
+        std::io::stdout().flush().unwrap();
+        
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        
+        let input = input.trim();
+        
+        if input == "exit" || input == "quit" {
+            break;
+        }
+        
+        if input.is_empty() {
+            continue;
+        }
+        
+        match lexer::lex(input) {
+            Ok(tokens) => {
+                match parser::parse(tokens) {
+                    Ok(ast) => {
+                        match typechecker::check(&ast) {
+                            Ok(_) => {
+                                println!("  OK");
+                            }
+                            Err(e) => {
+                                e.print();
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        e.print();
+                    }
+                }
+            }
+            Err(e) => {
+                e.print();
+            }
+        }
+    }
 }

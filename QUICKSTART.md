@@ -1,21 +1,24 @@
-# Shard Quick Start Guide
+# Quick Start with Shard
+
+Welcome to Shard! This guide will get you up and running in minutes.
 
 ## Installation
 
-### Prerequisites
-
-- Rust 1.70+ installed
-- C compiler (gcc, clang, or MSVC)
-
-### Build from Source
+### From Source
 
 ```bash
+# Clone the repository
 git clone https://github.com/MelvinMod/Shard.git
 cd Shard
+
+# Build the compiler
 cargo build --release
+
+# The binary is now at:
+# ./target/release/shard
 ```
 
-### Add to PATH
+### Add to PATH (Optional)
 
 ```bash
 export PATH="$PWD/target/release:$PATH"
@@ -23,26 +26,32 @@ export PATH="$PWD/target/release:$PATH"
 
 ## Your First Program
 
+### Step 1: Create a file
+
 Create `hello.shard`:
 
 ```shard
-fn main() {
-    let message: String = "Hello, World!";
-    print(message);
-}
+fn main()
+  say "Hello, World!"
+~
 ```
 
-Compile and run:
+### Step 2: Run it
 
 ```bash
-shardc compile hello.shard -o hello
+./target/release/shard run hello.shard
+```
+
+Output:
+```
+Hello, World!
+```
+
+### Step 3: Compile it
+
+```bash
+./target/release/shard compile hello.shard -o hello
 ./hello
-```
-
-Or run directly:
-
-```bash
-shardc run hello.shard
 ```
 
 ## Basic Syntax
@@ -50,126 +59,123 @@ shardc run hello.shard
 ### Variables
 
 ```shard
-let x: Int = 10;        // Immutable
-mut y: Int = 20;        // Mutable
-const MAX: Int = 100;   // Constant
+# Immutable
+let name = "Alice"
+
+# Mutable
+mut age = 25
+age = 26
+
+# With type annotation
+let pi: Float64 = 3.14159
 ```
 
 ### Functions
 
 ```shard
-fn add(a: Int, b: Int) -> Int {
-    return a + b;
-}
+fn greet(name: String) -> String
+  return "Hello, #{name}!"
+~
 
-fn greet(name: String) {
-    print("Hello, ", name);
-}
+# Call it
+let message = greet("World")
+say message
 ```
 
-### Control Flow
+### Conditionals
 
 ```shard
-// If/else
-if x > 10 {
-    print("Greater");
-} else {
-    print("Less");
-}
+when age >= 18
+  say "Adult"
+elsif age >= 13
+  say "Teenager"
+else
+  say "Child"
+~
+```
 
-// Loop
-loop {
-    break;
-    continue;
-}
+### Loops
 
-// For loop
-for i in 0..10 {
-    print(i);
-}
+```shard
+# For loop
+each i in 1..5
+  say "Count: #{i}"
+~
 
-// Match
-match value {
-    1 => { print("One"); }
-    2 => { print("Two"); }
-    _ => { print("Other"); }
-}
+# While loop
+while counter > 0
+  say counter
+  counter -= 1
+~
 ```
 
 ### Structs
 
 ```shard
-struct Point {
-    x: Int,
-    y: Int,
-}
+struct Person
+  name: String
+  age: Int
+  
+  fn new(name: String, age: Int) -> Person
+    Person { name, age }
+  ~
+  
+  fn greet(self)
+    say "Hi, I'm #{self.name}"
+  ~
+~
 
-let p: Point = Point { x: 10, y: 20 };
-print(p.x);
+let person = Person.new("Alice", 30)
+person.greet()
 ```
-
-## Examples
-
-See the `examples/` directory:
-
-- `hello.shard` - Hello World
-- `fibonacci.shard` - Recursive function
-- `arrays.shard` - Array operations
-- `structs.shard` - Struct usage
-- `game.shard` - Simple game loop
-
-## Next Steps
-
-1. Read `SYNTAX.md` for complete language reference
-2. Read `docs/ARCHITECTURE.md` for compiler internals
-3. Check `CONTRIBUTING.md` to help develop Shard
 
 ## Common Commands
 
 ```bash
-# Compile
-shardc compile program.shard -o program
+# Run a file
+shard run program.shard
 
-# Run
-shardc run program.shard
+# Compile to binary
+shard compile program.shard -o program
 
-# Type check
-shardc check program.shard
+# Check for errors without compiling
+shard check program.shard
 
-# Help
-shardc --help
+# Build with optimizations
+shard compile program.shard -o program --release
+
+# Show help
+shard --help
+
+# Show version
+shard --version
 ```
 
-## Troubleshooting
+## File Structure
 
-### "command not found"
+A typical Shard project:
 
-Add Shard to your PATH:
-
-```bash
-export PATH="$HOME/Shard/target/release:$PATH"
+```
+my_project/
+├── src/
+│   └── main.shard
+├── lib/
+│   └── utils.shard
+├── tests/
+│   └── test.shard
+└── README.md
 ```
 
-### "No main function"
+## Next Steps
 
-Make sure you have a `main` function:
+1. Read **BEGINNER_01.md** for more basics
+2. Try the examples in `examples/`
+3. Build a project from **PROJECT_01.md**
 
-```shard
-fn main() {
-    // Your code here
-}
-```
+## Need Help?
 
-### Type errors
+- Check the documentation in `*.md` files
+- Look at examples in `examples/`
+- See **CONTRIBUTING.md** for community info
 
-Check your types match:
-
-```shard
-let x: Int = 10;      // Correct
-let y: String = "10"; // Correct
-// let z: Int = "10"; // Error!
-```
-
----
-
-**Author:** MelvinSGjr (MelvinMod)
+Happy coding! 🚀

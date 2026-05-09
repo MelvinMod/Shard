@@ -1,0 +1,29 @@
+fn main()
+  say "=== Calculator Example ==="
+  say ""
+  
+  let a = 10
+  let b = 5
+  
+  say "a = #{a}"
+  say "b = #{b}"
+  say ""
+  
+  say "Addition: #{a + b}"
+  say "Subtraction: #{a - b}"
+  say "Multiplication: #{a * b}"
+  say "Division: #{a / b}"
+  say ""
+  
+  say "=== Math Functions ==="
+  say "Square root of 16 = #{math_sqrt(16)}"
+  say "Power of 2^8 = #{math_power(2, 8)}"
+~
+
+func math_sqrt(x)
+  x ** 0.5
+~
+
+func math_power(base, exp)
+  base ** exp
+~
