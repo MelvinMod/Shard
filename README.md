@@ -189,4 +189,4 @@ MIT License
 
 **Author:** MelvinSGjr (MelvinMod)  
 **Version:** 0.1.0  
-**Goal:** Make programming accessible to everyone
+**Goal:** Make programming available to me and perhaps everyone
